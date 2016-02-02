@@ -23,22 +23,73 @@ library(jsonlite)
 library(tm)
 library(tau)
 
+## Load all training data
 df <- fromJSON(paste0(data_folder, 'train.json'))
 
+## Some exploration
+
+### Plot cuisine freqs
 qplot(df$cuisine)
 
-## Want to explore some text characteristics
+#### 40k recipes
+nrow(df)
+
+str(df)
+
+table(df$cuisine)
+class(df$ingredients)
+
+
 
 recipe.corpus <- VCorpus(VectorSource(df$ingredients))
 
+## Allows each ingredient to be a phrase, and not chunked into separate words.
+tokenize_phrase <- function(x) return (x)
+recipe.dtm <- DocumentTermMatrix(recipe.corpus, control = list(tokenize=tokenize_phrase))
+## Want to explore some text characteristics
+length(findFreqTerms(recipe.dtm))
+# 39774 recipes, 6701 ingredients
+foo <- as.data.frame(inspect(recipe.dtm))
+foo$id <- df$id
+foo$cuisine <- df$cuisine
+
+## A reasonable first pass seems to be what does knn do? 
+
+## Split my data into test/train
+set.seed(123)
+train_inds <- sample(1:nrow(df), nrow(df)*0.5, replace = FALSE)
+
+train <- foo[train_inds,]
+test <- foo[-train_inds,]
+
+knn.out <- knn(train[,!names(train) %in% c('id', 'cuisine')], 
+               test[1:1000, !names(test) %in% c('id', 'cuisine')], 
+               k=5, 
+               cl = train$cuisine)
+
+
+small.test <- test[1:1000, c('id', 'cuisine')]
+small.test$pred <- knn.out
+small.test$correct <- small.test$cuisine == small.test$pred
+ggplot(small.test, aes(x=cuisine, y = pred, fill = cuisine)) + 
+  geom_jitter() + 
+  theme(axis.text.x = element_text(angle=30, hjust=1, vjust=1))
+
+table(small.test$cuisine)
+
+
+# 7838 recipes
 italian.corpus <- VCorpus(VectorSource(df[df$cuisine == 'italian', 'ingredients']))
 italian.dtm <- DocumentTermMatrix(italian.corpus, control = list(tokenize=tokenize_phrase))
-findFreqTerms(italian.dtm, 15)
 
+# What are the most common italian terms? 
+findFreqTerms(italian.dtm, lowfreq=780)
+
+# 7838 rows, 2927 cols (each col is a unique ingredient)
 foo <- as.data.frame(inspect(italian.dtm))
 
 
-tokenize_phrase <- function(x) return (x)
+
 
 dtm <- DocumentTermMatrix(recipe.corpus, control = list(tokenize=tokenize_phrase))
 findFreqTerms(dtm, 15)

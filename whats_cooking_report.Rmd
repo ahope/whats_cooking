@@ -1,0 +1,20 @@
+---
+title: "What’s Cooking"
+author: "ahs"
+date: "December 22, 2016"
+output: pdf_document
+---
+
+```{r, echo=FALSE}
+source('whats_cooking.R')
+```
+
+# What's Cooking Kaggle Competition
+
+This is a fascinating projec
+
+```{r, echo=FALSE}
+plot(cars)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
